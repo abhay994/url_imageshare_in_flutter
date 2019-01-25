@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker_saver/image_picker_saver.dart';
 import 'package:flutter/services.dart';
 import 'package:esys_flutter_share/esys_flutter_share.dart';
-import 'dart:io';
 import 'package:http/http.dart' as http;
+
+import 'dart:async';
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
@@ -25,9 +26,15 @@ class dn extends StatefulWidget {
   _dnState createState() => _dnState();
 }
 
-class _dnState extends State<dn> {
-
-
+  class _dnState extends State<dn> {
+  String get = '';
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    }
+    var filePath;
+  String BASE64_IMAGE ;
 
   @override
   Widget build(BuildContext context) {
@@ -36,90 +43,88 @@ class _dnState extends State<dn> {
         title: Text("jajs"),
       ),
       body: Image.network(
-        'https://cdn-images-1.medium.com/max/1200/1*5-aoK8IBmXve5whBQM90GA.png',
+        'https://www.w3schools.com/w3css/img_lights.jpg',
       ),
-      floatingActionButton: FloatingActionButton(onPressed: (){
-
-
-        _onImageSaveButtonPressed();
-
-
-      },
-
-        child: Icon(Icons.file_download),
-
-      ),
+      persistentFooterButtons: <Widget>[
+        FloatingActionButton(onPressed: (){
+          _onImageWallpapButtonPressed();
+        },
+          child: Icon(Icons.wallpaper),
+        ),
+        FloatingActionButton(onPressed: (){
+          _onImageShareButtonPressed();
+          }, child: Icon(Icons.file_download),),
+      ],
     );
   }
 
-
-  void _onImageSaveButtonPressed() async {
-
-
-    File _image;
-
- _onLoading(true);
+//share
+  void _onImageShareButtonPressed() async {
+    _onLoading(true);
     print("_onImageSaveButtonPressed");
-    var response = await http
-        .get('https://cdn-images-1.medium.com/max/1200/1*5-aoK8IBmXve5whBQM90GA.png');
-
-    ///debugPrint(response.statusCode.toString());
-
-    var filePath = await ImagePickerSaver.saveFile(
-        fileData: response.bodyBytes);
-
-    /*var savedFile= File.fromUri(Uri.file(filePath));
-    print(savedFile.toString());*/
-_onLoading(false);
-
-
-// this may take time bz of downloading process
-
-   print(filePath);
-    String BASE64_IMAGE = filePath;
-
+    var response = await http.get('https://www.w3schools.com/w3css/img_lights.jpg');
+    filePath = await ImagePickerSaver.saveFile(fileData: response.bodyBytes);
+    print(filePath);
+    BASE64_IMAGE = filePath;
+    _onLoading(false);
     final ByteData bytes = await rootBundle.load(BASE64_IMAGE);
     await EsysFlutterShare.shareImage('myImageTest.png', bytes, 'my image title');
+    }
+
+//wallpaper
+  void _onImageWallpapButtonPressed() async {
+     _onLoading(true);
+     print("_onImageSaveButtonPressed");
+     var response = await http.get('https://www.w3schools.com/w3css/img_lights.jpg');
+     filePath = await ImagePickerSaver.saveFile(fileData: response.bodyBytes);
+
+ _getWallpaper();
+ }
 
 
-
-
-
-  }
-
-  // dialog indicates that image is dowanloaded
-
+//Dialog
   void _onLoading( bool t) {
-
-
     if(t) {
       showDialog(
         context: context,
-
-        barrierDismissible: false,
+          barrierDismissible: false,
        builder: (BuildContext context){
           return SimpleDialog(
             children: <Widget>[
               new CircularProgressIndicator(),
-              new Text("Downding"),
-
-
-            ],
-
-
+              new Text("Downloading"),],
           );
-
-
-
-
-
-
-       }
-
-      );
+          });
     }else {
       Navigator.pop(context);
+      showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context){
+            return SimpleDialog(
+              children: <Widget>[
+
+                new Text("Done..."),],
+            );
+          });
+
     }
+  }
+
+
+//platform specific
+
+
+  static const platform = const MethodChannel('wallpaper');
+  Future<void> _getWallpaper() async {
+    try {
+      final int result =  await platform.invokeMethod('getWallpaper',{"text":filePath});
+       _onLoading(false);
+    } on PlatformException catch (e) {
+      Navigator.pop(context);
+
+    }
+
   }
 }
 
